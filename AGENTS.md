@@ -29,7 +29,7 @@ You are part of the **Local Community App Engineering Collective**: a distribute
 **Deliverables:**
 - User stories formatted as: `As a [persona], I want [goal] so that [benefit]`
 - Acceptance criteria using Given-When-Then scenarios
-- Updated roadmap.md with quarterly milestones
+- Updated roadmap.md with milestones
 - Sprint planning artifacts (sprint goals, capacity, commitments)
 
 **Decision Authority:**
@@ -159,7 +159,7 @@ testWidgets('End-to-end campaign contribution flow', (tester) async {
 - Email/password with email verification mandatory
 - Multi-factor authentication (SMS, TOTP) for withdrawals >$500
 - Social login (Google, Facebook, Apple) with account linking
-- JWT token refresh strategy (15min access, 30day refresh)
+- JWT token refresh strategy (short-lived access tokens with extended refresh cycles, configurable)
 - Row-level security rules (Firestore/Supabase RLS)
 
 // Role-Based Access Control
@@ -190,8 +190,8 @@ CCPA Compliance:
   
 Data Retention:
   - Active users: retain indefinitely while account exists
-  - Deleted accounts: purge PII after 90 days, retain anonymized analytics
-  - Transaction records: 7 years (financial regulation)
+  - Deleted accounts: purge PII promptly per policy while retaining anonymized analytics
+  - Transaction records: retained per financial regulation requirements
 ```
 
 #### Fraud Prevention
@@ -210,20 +210,20 @@ Data Retention:
    - Location mismatch (IP vs declared): +15 points
    - Score >50: manual review queue
 
-3. Manual Review (24-48hr SLA):
+3. Manual Review (expedited SLA):
    - Video call with creator (identity verification)
    - Business registration validation
    - Reference checks for B2B campaigns
    - Approve, request modifications, or reject with reason
 
 4. Ongoing Monitoring:
-   - Campaign progress: flag if no updates in 30 days
-   - Contributor patterns: flag if 80%+ from single source
-   - Community reports: investigate flagged campaigns within 12hrs
+  - Campaign progress: flag if no updates within the configured review window
+  - Contributor patterns: flag if 80%+ from single source
+  - Community reports: investigate flagged campaigns promptly
 ```
 
 **Deliverables:**
-- Security audit reports (quarterly)
+- Security audit reports (recurring)
 - Incident response runbooks (detection → containment → recovery)
 - Compliance documentation (GDPR records, AML logs)
 - Penetration test remediation plans
@@ -262,7 +262,7 @@ Pull Request CI Pipeline:
 Release Pipeline (Staging → Production):
   - Smoke tests on staging environment
   - Load testing (k6 scripts, 1000 concurrent users)
-  - Beta rollout (5% → 25% → 50% → 100% over 7 days)
+  - Beta rollout with progressive audience gates (e.g., 5% → 25% → 50% → 100%)
   - Crash-free session rate >99.5% before next stage
   - Rollback plan validated (database migrations reversible)
 ```
@@ -301,7 +301,7 @@ Alerts (PagerDuty integration):
   - High: Error rate >1% for 5min, Search latency >1s
   - Medium: Signup flow drop-off >50%, Feature adoption <10%
   
-Weekly Reports:
+Regular Reports:
   - Performance trends (latency, crash rate, FPS)
   - User engagement (retention curves, feature usage)
   - Infrastructure costs (Firebase usage, Stripe fees)
@@ -311,8 +311,8 @@ Weekly Reports:
 - Test coverage reports (unit, widget, integration)
 - Performance regression analysis (before/after comparisons)
 - Release readiness checklist (signed off by all agents)
-- Post-release monitoring summaries (first 48hrs critical)
-- Quarterly quality metrics review
+- Post-release monitoring summaries (early-phase focus)
+- Periodic quality metrics review
 
 **Decision Authority:**
 - Release gating based on quality thresholds
@@ -378,7 +378,7 @@ Request:
     campaign_type: enum (BUSINESS_STARTUP | COMMUNITY_PROJECT | ...)
     goal_amount: number (required, min 100, max 1000000)
     currency: string (ISO 4217, default USD)
-    target_end_date: ISO8601 datetime (30-180 days from now)
+  target_end_date: ISO8601 datetime within the approved scheduling window
     location: object
       city: string (required)
       region: string (required)
@@ -404,7 +404,7 @@ Errors:
   400: Invalid request (missing required fields, validation errors)
   401: Unauthorized (invalid or expired token)
   403: Forbidden (user not verified as campaign creator)
-  429: Rate limit exceeded (max 5 campaigns per day)
+  429: Rate limit exceeded (maximum campaigns for the current quota window)
   500: Internal server error
 
 Example (curl):
@@ -1347,7 +1347,7 @@ Authentication:
   Type: Bearer token (JWT)
   Header: Authorization: Bearer <token>
   Refresh: POST /v1/auth/refresh with refresh_token in body
-  Expiry: Access token 15min, refresh token 30 days
+  Expiry: Access token short-lived, refresh token extended (both configurable)
 
 Response Format:
   Success (2xx):
@@ -1412,10 +1412,10 @@ Rate Limiting:
     X-RateLimit-Reset: 1696257600  (Unix timestamp)
   
   Limits (per user per endpoint):
-    - GET requests: 100/minute
-    - POST/PUT/PATCH: 20/minute
-    - Payment operations: 10/minute
-    - Campaign creation: 5/day
+    - GET requests: 100 per rate window
+    - POST/PUT/PATCH: 20 per rate window
+    - Payment operations: 10 per rate window
+    - Campaign creation: quota-based limit
 ```
 
 ### 5.2 Backend Service Architecture
@@ -1429,6 +1429,10 @@ import { authenticateRequest, hasRole } from '../middleware/auth';
 import { validateRequest } from '../middleware/validation';
 import { logEvent } from '../utils/logger';
 import { CampaignSchema } from '../schemas/campaign';
+
+const DEFAULT_CAMPAIGN_CREATION_QUOTA_WINDOW_MS = 86_400_000; // fallback interval if not configured
+const DEFAULT_CAMPAIGN_MIN_LEAD_TIME_MS = 2_592_000_000; // fallback lead time lower bound
+const DEFAULT_CAMPAIGN_MAX_LEAD_TIME_MS = 15_552_000_000; // fallback lead time upper bound
 
 // Request validation schema
 const CreateCampaignRequest = z.object({
@@ -1488,17 +1492,21 @@ export const createCampaign = functions
       }
 
       // Rate limiting check
+      const quotaWindowMs =
+        functions.config().campaigns?.creation_quota_window_ms ??
+        DEFAULT_CAMPAIGN_CREATION_QUOTA_WINDOW_MS;
+
       const recentCampaigns = await admin
         .firestore()
         .collection('campaigns')
         .where('creator_user_id', '==', userId)
-        .where('created_at', '>', Date.now() - 24 * 60 * 60 * 1000)
+        .where('created_at', '>', Date.now() - quotaWindowMs)
         .get();
 
       if (recentCampaigns.size >= 5) {
         throw new functions.https.HttpsError(
           'resource-exhausted',
-          'Maximum 5 campaigns per day limit reached'
+          'Campaign creation quota exceeded for the current interval'
         );
       }
 
@@ -1507,13 +1515,20 @@ export const createCampaign = functions
 
       // Business logic validation
       const targetDate = new Date(validatedData.target_end_date);
-      const minDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
-      const maxDate = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000); // 180 days
+      const minLeadTimeMs =
+        functions.config().campaigns?.minimum_lead_time_ms ??
+        DEFAULT_CAMPAIGN_MIN_LEAD_TIME_MS;
+      const maxLeadTimeMs =
+        functions.config().campaigns?.maximum_lead_time_ms ??
+        DEFAULT_CAMPAIGN_MAX_LEAD_TIME_MS;
+
+      const minDate = new Date(Date.now() + minLeadTimeMs);
+      const maxDate = new Date(Date.now() + maxLeadTimeMs);
 
       if (targetDate < minDate || targetDate > maxDate) {
         throw new functions.https.HttpsError(
           'invalid-argument',
-          'Target end date must be between 30 and 180 days from now'
+          'Target end date must fall within the configured scheduling window'
         );
       }
 
@@ -1602,7 +1617,7 @@ async function calculateFraudScore(params: {
   const userDoc = await admin.firestore().collection('users').doc(params.userId).get();
   const accountAge = Date.now() - userDoc.data()?.created_at?.toMillis();
   if (accountAge < 7 * 24 * 60 * 60 * 1000) {
-    score += 30; // Less than 7 days old
+  score += 30; // Within freshness threshold
   }
 
   // Check for stock photos (Google Vision API reverse image search)
@@ -3168,7 +3183,7 @@ Example Conflict:
 ## Quality Sign-off: Campaign Milestone Feature
 
 ### Testing Summary
-- **Duration**: 3 days
+- **Timeline**: Multi-day execution window
 - **Test Execution**: 247 tests run, 247 passed, 0 failed
 - **Defects Found**: 3 minor, 0 critical
 - **Coverage**: 85% overall (exceeds 80% threshold)
@@ -3243,7 +3258,7 @@ Checkpoint 1: Requirements Finalized
     - All agents understand the requirements
     - No open questions about scope
     - Estimated effort documented
-  Duration: 0.5-1 day
+  Timeline: Brief cycle
 
 Checkpoint 2: Design Approved
   Owner: Architect
@@ -3256,7 +3271,7 @@ Checkpoint 2: Design Approved
     - Design reviewed by Builder, Security, Quality
     - No unresolved technical concerns
     - Implementation plan approved
-  Duration: 1-2 days
+  Timeline: Focused iteration
 
 Checkpoint 3: Security Review
   Owner: Security
@@ -3268,7 +3283,7 @@ Checkpoint 3: Security Review
     - No critical security risks
     - Mitigation plans for identified risks
     - Compliance requirements met
-  Duration: 0.5-1 day
+  Timeline: Brief cycle
 
 Checkpoint 4: Implementation Complete
   Owner: Builder
@@ -3281,7 +3296,7 @@ Checkpoint 4: Implementation Complete
     - Unit test coverage >80%
     - Code review completed
     - CI/CD pipeline passing
-  Duration: 3-10 days (varies by complexity)
+  Timeline: Multi-step execution (scales with complexity)
 
 Checkpoint 5: Quality Verified
   Owner: Quality
@@ -3293,7 +3308,7 @@ Checkpoint 5: Quality Verified
     - No critical defects
     - Performance targets met
     - Regression tests pass
-  Duration: 2-3 days
+  Timeline: Dedicated validation window
 
 Checkpoint 6: Production Ready
   Owner: Navigator
@@ -3306,7 +3321,7 @@ Checkpoint 6: Production Ready
     - All agents sign off
     - Feature flag configuration ready
     - Monitoring dashboards configured
-  Duration: 0.5-1 day
+  Timeline: Final coordination window
 ```
 
 **Checkpoint Template:**
@@ -3326,7 +3341,7 @@ Checkpoint 6: Production Ready
 ## Exit Criteria Status
 - [x] All agents understand requirements (confirmed in sync)
 - [ ] No open questions (2 questions pending)
-- [x] Estimated effort: 5 days (all agents agree)
+- [x] Estimated effort: Multi-day (all agents agree)
 
 ## Open Questions
 1. Should milestone verification require admin approval for amounts >$5k?
@@ -3343,8 +3358,8 @@ Checkpoint 6: Production Ready
 None
 
 ## Next Steps
-- Navigator to answer open questions by EOD
-- Move to Checkpoint 2 (Design) tomorrow
+- Navigator to answer open questions promptly
+- Move to Checkpoint 2 (Design) once prerequisites are satisfied
 
 ## Sign-offs Required
 - [ ] Navigator
@@ -3357,33 +3372,22 @@ None
 ### 11.2 Sprint Checkpoint Cadence
 
 ```yaml
-Sprint Duration: 2 weeks (10 working days)
+Sprint Cadence:
+  Iterations: Fixed-length cycles (team-aligned)
+  Planning Gates:
+    - Start of iteration: plan scope, review objectives, resolve blockers
+    - Mid-iteration: check progress and adjust priorities if needed
+    - End of iteration: reflect on outcomes, demo completed work, prep next cycle
 
-Weekly Checkpoints:
-  Monday:
-    - Sprint planning (if new sprint)
-    - Week objectives review
-    - Blocker resolution session
-    
-  Wednesday:
-    - Mid-sprint check-in
-    - Progress review
-    - Adjust priorities if needed
-    
-  Friday:
-    - Week retrospective (if sprint end)
-    - Demo completed features
-    - Plan next week
+Daily Rhythm:
+  - Async updates from all agents
+  - Meetings only when synchronous problem-solving is required
+  - Updates shared early in each local workday
 
-Daily:
-  - Async daily sync (all agents post updates)
-  - No meetings unless blocker requires synchronous discussion
-  - Updates posted by 10:00 AM local time
-
-Monthly:
-  - Architecture review (review all ADRs)
-  - Security audit (external if needed)
-  - Performance review (analyze metrics)
+Periodic Reviews:
+  - Architecture review (ADR sweep)
+  - Security audit (internal or external)
+  - Performance review (metrics analysis)
   - Community feedback review
 ```
 
@@ -3517,7 +3521,7 @@ User Metrics:
   Monthly Active Users: Growing >15% MoM
   User Retention (30-day): >60%
   Daily Active Users: >40% of MAU
-  Average session duration: >10 minutes
+  Average session depth: exceeds engagement benchmark
   User satisfaction (NPS): >50
 
 Platform Metrics:
@@ -3904,7 +3908,7 @@ Questions? Contact us at support@localcommunityapp.org
 
 **Feature: Campaign Milestone Tracking** (End-to-End)
 
-**Phase 1: Navigator - Requirements (Day 1)**
+**Phase 1: Navigator - Requirements (Stage 1)**
 
 ```markdown
 ## User Story: Campaign Milestones
@@ -3953,7 +3957,7 @@ So that contributors can see progress and I can release funds incrementally.
 2. Can milestones overlap or must they be sequential?
 ```
 
-**Phase 2: Architect - Design (Day 2-3)**
+**Phase 2: Architect - Design (Stage 2)**
 
 ```yaml
 # Architecture Decision Record: Milestone Data Model
@@ -4005,7 +4009,7 @@ interface CreateMilestoneRequest {
   title: string;              // 1-100 chars
   description: string;        // max 500 chars
   target_amount: number;      // min 100, max campaign.goal_amount
-  target_date: string;        // ISO8601, 7-180 days from now
+  target_date: string;        // ISO8601, must align with configured scheduling window
   order: number;              // 1-5, must be unique per campaign
 }
 
@@ -4079,7 +4083,7 @@ service cloud.firestore {
 }
 ```
 
-**Phase 3: Security - Threat Model (Day 3)**
+**Phase 3: Security - Threat Model (Stage 3)**
 
 ```markdown
 ## Threat Model: Campaign Milestone Feature
@@ -4152,7 +4156,7 @@ service cloud.firestore {
 - Fraud Prevention: Implement ML-based anomaly detection for milestone patterns
 ```
 
-**Phase 4: Builder - Implementation (Day 4-8)**
+**Phase 4: Builder - Implementation (Stage 4)**
 
 ```dart
 // lib/features/milestones/data/models/milestone_model.dart
@@ -4690,14 +4694,14 @@ export const updateMilestoneProgress = functions.firestore
   });
 ```
 
-**Phase 5: Quality - Testing (Day 9-10)**
+**Phase 5: Quality - Testing (Stage 5)**
 
 ```markdown
 ## Test Plan: Campaign Milestone Feature
 
 ### Test Summary
 - **Feature**: Campaign Milestone Tracking
-- **Test Duration**: 2 days
+- **Test Timeline**: Extended validation window
 - **Test Environment**: Staging
 - **Test Data**: 50 test campaigns with various milestone configurations
 
@@ -4837,7 +4841,7 @@ All other issues are cosmetic and do not impact functionality. Estimated 10-minu
 **Next Steps**: Builder to fix typo, re-test, deploy to production
 ```
 
-**Phase 6: Release (Day 11)**
+**Phase 6: Release (Stage 6)**
 
 ```markdown
 ## Release Notes: Version 1.3.0 - Milestone Tracking
@@ -5016,19 +5020,19 @@ flutter run  # Mobile (requires emulator/device)
 
 ### Your First Week
 
-**Days 1-2: Learning**
+**Early Stage: Learning**
 - Shadow existing agents in your role
 - Review past decisions and their rationale
 - Understand current priorities
 - Ask questions liberally
 
-**Days 3-4: Contributing**
+**Mid Stage: Contributing**
 - Pair with another agent on a small task
 - Submit your first contribution
 - Participate in daily syncs
 - Give feedback on others' work
 
-**Day 5: Independence**
+**Later Stage: Independence**
 - Take ownership of a feature component
 - Lead a small design discussion
 - Help onboard the next new agent
@@ -5110,7 +5114,7 @@ You've been assigned a mentor agent in your role domain:
 - **Meeting Cadence**: Weekly 1:1 for first month
 - **Communication**: Ping anytime with questions
 
-### Success Metrics (First 30 Days)
+### Success Metrics (Initial Launch Window)
 
 - [ ] Complete 5+ contributions (code, docs, reviews)
 - [ ] Participate in 2+ design discussions
@@ -5303,12 +5307,12 @@ Create a weekly snapshot of these metrics and review trends.
 
 ### 6. Your Success Looks Like
 
-**Short-term (30 days):**
+**Short-term (initial window):**
 - Backlog organized with clear priorities
 - All user stories have acceptance criteria
 - Team knows what's being built and why
 
-**Medium-term (90 days):**
+**Medium-term (subsequent phase):**
 - Feature adoption rates meet targets
 - User satisfaction improving (NPS trending up)
 - Reduced scope changes mid-sprint
@@ -5355,7 +5359,7 @@ Create a weekly snapshot of these metrics and review trends.
 Current Architecture (Single Region):
   Users: <100,000
   Campaigns: <10,000
-  Requests: <1M per day
+  Requests: <1M per evaluation window
   Infrastructure: Single Firebase/Supabase project
   
 Phase 1: Regional Expansion (100k-1M users):
@@ -5728,7 +5732,7 @@ contract CampaignRegistry {
 
 ## 17. Conclusion & Next Steps
 
-### 17.1 Immediate Actions (Next 7 Days)
+### 17.1 Immediate Actions (Next Sprint)
 
 **For All Agents:**
 1. Review and internalize this AGENTS.md document
@@ -5751,7 +5755,7 @@ contract CampaignRegistry {
 4. Assign stories to agents
 5. Set sprint goal and success criteria
 
-### 17.2 30-Day Roadmap
+### 17.2 Near-Term Roadmap
 
 **Week 1: Foundation**
 - Complete environment setup

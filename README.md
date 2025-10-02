@@ -89,18 +89,25 @@ Getting Started
 ```bash
 # Clone the repository
 git clone https://github.com/aequchain/Local-Community-App.git
-cd Local-Community-App
+cd Local-Community-App/local_community_app
 
 # Install Flutter dependencies
 flutter pub get
 
-# Run the app
+# Run the app (mobile/web/desktop depending on connected devices)
 flutter run
 ```
 
 ### Development Setup
 
 See the [comprehensive development plan](Local%20Community%20App.md) for detailed architecture, database schemas, and implementation guidance.
+
+### Current build snapshot (October 2025)
+- ✅ Flutter 3.35 project scaffolded under `local_community_app/`
+- ✅ Riverpod + GoRouter + Aequus design tokens wired into a responsive landing screen prototype
+- ✅ Firebase CLI installed and authenticated (next step: `firebase init firestore functions hosting storage emulators` inside `local_community_app/` to generate config files)
+- ✅ Free-tier friendly dependency set (Firebase Spark, Flutter web builds, no paid APIs wired yet)
+- 🔜 Implement authentication onboarding flow followed by campaign/job domain models backed by Firestore
 
 
 Contributing
@@ -127,10 +134,15 @@ Project Structure
 -----------------
 
 ```
-lib/
-├── core/           # Shared utilities, constants, services
-├── features/       # Feature-based modules (campaigns, jobs, wallet, etc.)
-└── shared/         # Reusable widgets and resources
+local_community_app/lib/
+└── src/
+	├── app.dart                # Root MaterialApp with routing & themes
+	├── bootstrap.dart          # ProviderScope + guarded bootstrapper
+	├── core/                   # (WIP) shared constants, utilities
+	├── features/
+	│   └── landing/            # First responsive screen + widgets
+	├── routing/                # GoRouter configuration
+	└── theme/                  # Aequus design tokens & theme builder
 
 docs/
 ├── architecture/   # Architecture Decision Records (ADRs)

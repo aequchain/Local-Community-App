@@ -38,7 +38,16 @@ A Flutter-based crowdfunding platform enabling community-driven campaigns with p
 
 ### Prerequisites
 
-1. **Flutter SDK** (3.0.0 or higher)
+1. **Dart SDK** (stable)
+   ```bash
+   # Option A: Install Dart via snap (Linux)
+   sudo snap install dart --classic
+
+   # Option B: Install via apt (Ubuntu/Debian) - follow official instructions
+   # See: https://dart.dev/get-dart
+   ```
+
+2. **Flutter SDK** (3.0.0 or higher)
    ```bash
    # Install Flutter via snap (Linux)
    sudo snap install flutter --classic
@@ -46,16 +55,32 @@ A Flutter-based crowdfunding platform enabling community-driven campaigns with p
    # Or download from: https://docs.flutter.dev/get-started/install
    ```
 
-2. **Chrome** (for web deployment)
+3. **Chrome** (for web deployment)
    ```bash
    # Ubuntu/Debian
    sudo apt install google-chrome-stable
    ```
 
-3. **Git** (for version control)
+
+4. **Git** (for version control)
    ```bash
    sudo apt install git
    ```
+
+5. **Backend / CLI accounts (optional for demo)**
+
+- **Firebase CLI or Supabase account**: If you intend to use Firebase for Authentication/Firestore/Storage, install the Firebase CLI and configure a Firebase project. Alternatively, you can create a Supabase project if you prefer Postgres + Auth. (Not required to run the demo with mock repositories.)
+
+  ```bash
+  # Firebase CLI
+  npm install -g firebase-tools
+
+  # or Supabase CLI
+  npm install -g supabase
+  ```
+
+- **Stripe account (optional)**: Required only if you want to wire payments in production. For local demos you can leave payment processing mocked.
+
 
 ### Installation
 

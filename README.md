@@ -45,7 +45,7 @@ Key Features
 - Accommodation & rentals module
 - Transport services integration
 - Cryptocurrency payment support
-- White-label solution for custom deployments (core platform remains 100% open-source and the default deployment is non-profit; the recommended model is 0% commission, 0 fees)
+- Custom deployment options for organizations (core platform remains 100% open-source and the default deployment is non-profit; the recommended model is 0% commission, 0 fees)
 - API for third-party integrations
 
 
@@ -145,7 +145,7 @@ Roadmap
 MVP launch (single city pilot)  
 Feature expansion and multi-city rollout  
 International expansion (10+ countries)  
-Full ecosystem with marketplace, AI features, white-label solution
+Full ecosystem with marketplace and AI features
 
 See [Local Community App.md](Local%20Community%20App.md) for detailed phase breakdowns.
 

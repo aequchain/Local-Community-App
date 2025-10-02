@@ -38,60 +38,23 @@ A Flutter-based crowdfunding platform enabling community-driven campaigns with p
 
 ### Prerequisites
 
-1. **Dart SDK** (stable)
-   ```bash
-   # Option A: Install Dart via snap (Linux)
-   sudo snap install dart --classic
+- Flutter 3.24+
+- Dart 3.5+
+- Firebase CLI or Supabase account
+- Stripe account for payment processing
 
-   # Option B: Install via apt (Ubuntu/Debian) - follow official instructions
-   # See: https://dart.dev/get-dart
-   ```
+### Installation
 
-2. **Flutter SDK** (3.0.0 or higher)
-   ```bash
-   # Install Flutter via snap (Linux)
-   sudo snap install flutter --classic
-   
-   # Or download from: https://docs.flutter.dev/get-started/install
-   ```
-
-3. **Chrome** (for web deployment)
-   ```bash
-   ## Getting Started
-
-   ### Prerequisites
-
-   - Flutter 3.24+
-   - Dart 3.5+
-   - Firebase CLI or Supabase account
-   - Stripe account for payment processing
-
-   flutter pub get
-   ```
-
-5. **Run code generation (for Riverpod/Freezed):**
-   ```bash
-   flutter pub run build_runner build --delete-conflicting-outputs
-   ```
-
-### Running the App
-
-#### Development Mode (Chrome)
 ```bash
-flutter run -d chrome
-```
+# Clone the repository
+git clone https://github.com/aequchain/Local-Community-App.git
+cd Local-Community-App/local_community_app
 
-#### Production Build (Wasm - Optimized)
-```bash
-flutter run -d chrome --release --wasm
-```
+# Install Flutter dependencies
+flutter pub get
 
-#### Build for Deployment
-```bash
-# Web build with Wasm renderer
-flutter build web --release --wasm
-
-# Output will be in: build/web/
+# Run the app (mobile/web/desktop depending on connected devices)
+flutter run
 ```
 
 ### Project Structure

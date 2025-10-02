@@ -57,52 +57,15 @@ A Flutter-based crowdfunding platform enabling community-driven campaigns with p
 
 3. **Chrome** (for web deployment)
    ```bash
-   # Ubuntu/Debian
-   sudo apt install google-chrome-stable
-   ```
+   ## Getting Started
 
+   ### Prerequisites
 
-4. **Git** (for version control)
-   ```bash
-   sudo apt install git
-   ```
+   - Flutter 3.24+
+   - Dart 3.5+
+   - Firebase CLI or Supabase account
+   - Stripe account for payment processing
 
-5. **Backend / CLI accounts (optional for demo)**
-
-- **Firebase CLI or Supabase account**: If you intend to use Firebase for Authentication/Firestore/Storage, install the Firebase CLI and configure a Firebase project. Alternatively, you can create a Supabase project if you prefer Postgres + Auth. (Not required to run the demo with mock repositories.)
-
-  ```bash
-  # Firebase CLI
-  npm install -g firebase-tools
-
-  # or Supabase CLI
-  npm install -g supabase
-  ```
-
-- **Stripe account (optional)**: Required only if you want to wire payments in production. For local demos you can leave payment processing mocked.
-
-
-### Installation
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/aequchain/Local-Community-App.git
-   cd Local-Community-App/local_community_app
-   ```
-
-2. **Verify Flutter installation:**
-   ```bash
-   flutter doctor -v
-   ```
-   Ensure Chrome is detected for web support.
-
-3. **Enable web support:**
-   ```bash
-   flutter config --enable-web
-   ```
-
-4. **Install dependencies:**
-   ```bash
    flutter pub get
    ```
 

@@ -79,10 +79,36 @@ Getting Started
 ---------------
 
 ### Prerequisites
-- Flutter 3.24+
-- Dart 3.5+
-- Firebase CLI or Supabase account
-- Stripe account for payment processing
+
+To run this project, you need to install Dart and Flutter. Firebase and Stripe are optional for demo purposes.
+
+#### Installing Flutter (includes Dart)
+
+1. Download the Flutter SDK from the official website: https://flutter.dev/docs/get-started/install/linux
+
+2. Extract the downloaded file to a desired location, e.g., `~/flutter`:
+
+   ```bash
+   tar xf ~/Downloads/flutter_linux_*.tar.xz -C ~/
+   ```
+
+3. Add Flutter to your PATH by adding the following line to your `~/.bashrc` or `~/.zshrc`:
+
+   ```bash
+   export PATH="$PATH:~/flutter/bin"
+   ```
+
+4. Reload your shell or run `source ~/.bashrc` (or equivalent).
+
+5. Verify the installation:
+
+   ```bash
+   flutter doctor
+   ```
+
+This will install both Flutter and Dart, as Dart is bundled with Flutter.
+
+For more information on Dart, visit: https://dart.dev/get-dart
 
 ### Installation
 

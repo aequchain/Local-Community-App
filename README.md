@@ -120,8 +120,26 @@ cd Local-Community-App/local_community_app
 # Install Flutter dependencies
 flutter pub get
 
-# Run the app (mobile/web/desktop depending on connected devices)
+# Run the app
+# For any connected device (mobile/web/desktop)
 flutter run
+
+# For Chrome browser in release mode with WASM
+flutter run -d chrome --release --wasm
+
+# For Linux desktop
+flutter run -d linux
+
+# For Android mobile
+flutter run --release # Connected Android device with USB debugging/debug mode ENABLED in you Android device Settings > Developer Options
+
+
+# Other platform options:
+# Android emulator: 
+flutter run -d emulator
+# iOS simulator (macOS only): 
+flutter run -d simulator
+# Specific device: flutter run -d <device_id> (use `flutter devices` to list available devices)
 ```
 
 ### Development Setup

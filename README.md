@@ -24,7 +24,7 @@ Core Value Proposition
 Key Features
 ------------
 
-### Phase 1: MVP (Months 1-6)
+### Phase 1: MVP
 - **Campaign System:** Create and fund business startups, community projects, and social initiatives
 - **Job Board:** Post jobs and apply for local employment opportunities
 - **Wallet System:** Secure payment processing with Stripe Connect integration
@@ -32,14 +32,14 @@ Key Features
 - **Community Impact Statistics:** Calculate per-capita contribution impact with population data
 - **Real-Time Updates:** Live campaign progress tracking and notifications
 
-### Phase 2: Enhanced Features (Months 7-12)
+### Phase 2: Enhanced Features
 - Social features (share, comment, follow)
 - Advanced search with AI-powered recommendations
 - Multi-language support (5+ languages)
 - Business directory and marketplace
 - Analytics dashboards for creators and administrators
 
-### Phase 3: Full Ecosystem (Months 13-24)
+### Phase 3: Full Ecosystem
 - Accommodation & rentals module
 - Transport services integration
 - Cryptocurrency payment support
@@ -140,10 +140,10 @@ docs/
 Roadmap
 -------
 
-**2025 Q4:** MVP launch (single city pilot)  
-**2026 Q1-Q2:** Feature expansion and multi-city rollout  
-**2026 Q3-Q4:** International expansion (10+ countries)  
-**2027+:** Full ecosystem with marketplace, AI features, white-label solution
+MVP launch (single city pilot)  
+Feature expansion and multi-city rollout  
+International expansion (10+ countries)  
+Full ecosystem with marketplace, AI features, white-label solution
 
 See [Local Community App.md](Local%20Community%20App.md) for detailed phase breakdowns.
 

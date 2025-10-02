@@ -20,6 +20,8 @@ Core Value Proposition
 - **For Communities:** Stimulate economic growth through transparent, accessible resource mobilization
 - **For the World:** A replicable, adaptable framework for any community, region, or nation
 
+This project is 100% open-source and designed to remain community-owned. No single person or entity should financially benefit from the core platform: the recommended rollout is zero commissions and zero fees (0% commission, 0 fees) to prioritize fast, broad, and inclusive economic stimulation and mobilization.
+
 
 Key Features
 ------------
@@ -43,7 +45,7 @@ Key Features
 - Accommodation & rentals module
 - Transport services integration
 - Cryptocurrency payment support
-- White-label solution for custom deployments
+- White-label solution for custom deployments (core platform remains 100% open-source and the default deployment is non-profit; the recommended model is 0% commission, 0 fees)
 - API for third-party integrations
 
 
